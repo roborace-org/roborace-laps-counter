@@ -3,6 +3,7 @@
 
 #include <DeviceWiFi.h>
 #include <WebSocketsServer.h>
+#include <ArduinoJson.h>
 #include <Interval.h>
 
 class LapsCounterServer : public DeviceWiFi {
@@ -21,7 +22,13 @@ public:
         webSocket.loop();
 
         if (interval.isReady()) {
-            webSocket.broadcastTXT("ping " + String(millis()));
+            jsonBuffer.clear();
+            JsonObject &root = jsonBuffer.createObject();
+            root["type"] = "PING";
+            root["millis"] = millis();
+            String json;
+            root.printTo(json);
+            webSocket.broadcastTXT(json);
         }
 
     }
@@ -31,6 +38,8 @@ private:
     Interval interval = Interval(5000);
 
     WebSocketsServer webSocket = WebSocketsServer(80);
+
+    DynamicJsonBuffer jsonBuffer;
 
 
     void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
@@ -43,13 +52,23 @@ private:
             case WStype_CONNECTED: {
                 IPAddress ip = webSocket.remoteIP(num);
                 Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
-                webSocket.sendTXT(num, "Connected");
+                jsonBuffer.clear();
+                JsonObject &root = jsonBuffer.createObject();
+                root["type"] = "CONNECTED";
+                String json;
+                root.printTo(json);
+                webSocket.sendTXT(num, json);
                 break;
             }
             case WStype_TEXT: {
                 Serial.printf("[%u] get Text: %s\n", num, payload);
-                webSocket.sendTXT(num, "message here");
-                webSocket.broadcastTXT("message here broadcast");
+                jsonBuffer.clear();
+                JsonObject &root = jsonBuffer.createObject();
+                root["type"] = "MESSAGE";
+                root["message"] = payload;
+                String json;
+                root.printTo(json);
+                webSocket.sendTXT(num, json);
                 break;
             }
         }

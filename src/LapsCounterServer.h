@@ -5,6 +5,7 @@
 #include <WebSocketsServer.h>
 #include <ArduinoJson.h>
 #include <Interval.h>
+#include "RaceState.h"
 
 class LapsCounterServer {
 
@@ -24,22 +25,20 @@ public:
         webSocket.loop();
 
         if (interval.isReady()) {
-            jsonBuffer.clear();
-            JsonObject &root = jsonBuffer.createObject();
-            root["type"] = "PING";
+            JsonObject &root = createRootObject("PING");
             root["millis"] = millis();
-            String json;
-            root.printTo(json);
-            webSocket.broadcastTXT(json);
+            sendWebSocket(root);
         }
 
     }
 
 private:
 
-    ESP8266WiFiMulti WiFiMulti;
+    RaceState raceState = RaceState::READY;
 
-    Interval interval = Interval(5000);
+    Interval interval = Interval(10000);
+
+    ESP8266WiFiMulti WiFiMulti;
 
     WebSocketsServer webSocket = WebSocketsServer(80);
 
@@ -56,27 +55,97 @@ private:
             case WStype_CONNECTED: {
                 IPAddress ip = webSocket.remoteIP(num);
                 Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
-                jsonBuffer.clear();
-                JsonObject &root = jsonBuffer.createObject();
-                root["type"] = "CONNECTED";
-                String json;
-                root.printTo(json);
-                webSocket.sendTXT(num, json);
+
+                String raceStateString;
+                getRaceStateString(raceState, raceStateString);
+                sendWebSocket(num, "STATE", "state", raceStateString.c_str());
                 break;
             }
             case WStype_TEXT: {
                 Serial.printf("[%u] get Text: %s\n", num, payload);
-                jsonBuffer.clear();
-                JsonObject &root = jsonBuffer.createObject();
-                root["type"] = "MESSAGE";
-                root["message"] = payload;
-                String json;
-                root.printTo(json);
-                webSocket.sendTXT(num, json);
+                processInput(num, payload);
                 break;
             }
         }
 
+    }
+
+    void processInput(uint8_t num, const uint8_t *payload) {
+        JsonObject &root = jsonBuffer.parseObject((char *) payload);
+
+        if (!root.containsKey("type")) {
+            return sendWebSocket(num, "ERROR", "error", "Missing field 'type'");
+        }
+
+        if (root["type"] == "COMMAND") {
+            processCommand(num, root);
+        } else if (root["type"] == "STATE") {
+            String raceStateString;
+            getRaceStateString(raceState, raceStateString);
+            sendWebSocket(num, "STATE", "state", raceStateString.c_str());
+        } else {
+            String s = String("Unknown type: ");
+            s.concat((const char *) root["type"]);
+            sendWebSocket(num, "ERROR", "error", s.c_str());
+        }
+    }
+
+    void processCommand(uint8_t num, const JsonObject &root) {
+
+        if (!root.containsKey("state")) {
+            return sendWebSocket(num, "ERROR", "error", "Missing field 'state'");
+        }
+
+        const char *state = root["state"];
+        RaceState parsedState = parseRaceState(state);
+        if (parsedState == RaceState::UNKNOWN) {
+            String s = "Unknown state: ";
+            s.concat(state);
+            return sendWebSocket(num, "ERROR", "error", s.c_str());
+        }
+        changeStateAndBroadcastState(parsedState);
+
+    }
+
+    void changeStateAndBroadcastState(const RaceState &parsedState) {
+        if (raceState != parsedState) {
+            raceState = parsedState;
+
+            JsonObject &broadcast = createRootObject("STATE");
+            String raceStateString;
+            getRaceStateString(raceState, raceStateString);
+            broadcast["state"] = raceStateString;
+            sendWebSocket(broadcast);
+        }
+    }
+
+    void sendWebSocket(uint8_t num, const char *type, const char *fieldName, const char *fieldValue) {
+        JsonObject &resp = createRootObject(type);
+        resp[fieldName] = fieldValue;
+        sendWebSocket(resp, num);
+    }
+
+    void sendWebSocket(const JsonObject &root, uint8_t num) {
+        String json;
+        root.printTo(json);
+        webSocket.sendTXT(num, json);
+    }
+
+    void sendWebSocket(const JsonObject &root) {
+        String json;
+        root.printTo(json);
+        webSocket.broadcastTXT(json);
+    }
+
+    JsonObject &createRootObject(const char *type) {
+        JsonObject &resp = createRootObject();
+        resp["type"] = type;
+        return resp;
+    }
+
+    JsonObject &createRootObject() {
+        jsonBuffer.clear();
+        return jsonBuffer.createObject();
     }
 };
 

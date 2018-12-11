@@ -5,6 +5,7 @@
 #include <WebSocketsServer.h>
 #include <ArduinoJson.h>
 #include <Interval.h>
+#include <Stopwatch.h>
 #include "RaceState.h"
 
 class LapsCounterServer {
@@ -24,9 +25,9 @@ public:
         WiFiMulti.run();
         webSocket.loop();
 
-        if (interval.isReady()) {
-            JsonObject &root = createRootObject("PING");
-            root["millis"] = millis();
+        if (interval.isReady() && raceState == RaceState::RUNNING) {
+            JsonObject &root = createRootObject("TIME");
+            root["millis"] = raceStopwatch.time();
             sendWebSocket(root);
         }
 
@@ -35,6 +36,9 @@ public:
 private:
 
     RaceState raceState = RaceState::READY;
+
+    Stopwatch raceStopwatch;
+    unsigned long raceTime;
 
     Interval interval = Interval(10000);
 
@@ -116,6 +120,19 @@ private:
             getRaceStateString(raceState, raceStateString);
             broadcast["state"] = raceStateString;
             sendWebSocket(broadcast);
+
+            if (raceState == RaceState::RUNNING) {
+                raceStopwatch.start();
+                interval.startWithCurrentTime();
+                JsonObject &root = createRootObject("TIME");
+                root["millis"] = raceStopwatch.time();
+                sendWebSocket(root);
+            } else if (raceState == RaceState::FINISH) {
+                raceTime = raceStopwatch.time();
+                JsonObject &root = createRootObject("TIME");
+                root["millis"] = raceTime;
+                sendWebSocket(root);
+            }
         }
     }
 

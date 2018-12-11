@@ -1,24 +1,26 @@
 #ifndef LAPS_COUNTER_SERVER_H
 #define LAPS_COUNTER_SERVER_H
 
-#include <DeviceWiFi.h>
+#include <ESP8266WiFiMulti.h>
 #include <WebSocketsServer.h>
 #include <ArduinoJson.h>
 #include <Interval.h>
 
-class LapsCounterServer : public DeviceWiFi {
+class LapsCounterServer {
 
 public:
 
-    LapsCounterServer(const char *ssid, const char *pass) : DeviceWiFi(ssid, pass) {
+    LapsCounterServer(const char *ssid, const char *pass) {
+        WiFiMulti.addAP(ssid, pass);
+        WiFiMulti.run();
         webSocket.begin();
         webSocket.onEvent([&](uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
             webSocketEvent(num, type, payload, length);
         });
     }
 
-    void loop() override {
-        DeviceWiFi::loop();
+    void loop() {
+        WiFiMulti.run();
         webSocket.loop();
 
         if (interval.isReady()) {
@@ -34,6 +36,8 @@ public:
     }
 
 private:
+
+    ESP8266WiFiMulti WiFiMulti;
 
     Interval interval = Interval(5000);
 

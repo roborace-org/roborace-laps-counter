@@ -38,6 +38,7 @@
         }
 
         #stopwatch {
+            margin-left: 20px;
             font-family: 'Overpass Mono', monospace;
         }
 
@@ -80,7 +81,7 @@
     <div id="menu">
         <div>Laps: 25</div>
         <div>State: <span id="race-state">NOT CONNECTED</span></div>
-        <div>Race Time <span id="stopwatch">0:00.000</span></div>
+        <div>Race Time: <span id="stopwatch">0:00.000</span></div>
     </div>
     <div id="content">
 
@@ -94,6 +95,7 @@
                 <th>Time</th>
             </tr>
             </thead>
+            <tbody id="tbody"></tbody>
         </table>
 
     </div>
@@ -119,6 +121,7 @@
         var socket;
         var raceState = 'UNKNOWN';
         var raceTime = 0;
+        var robots = {};
 
         var updateInterval = 9;
         setInterval(function () {
@@ -184,6 +187,22 @@
             },
             TIME: function (data) {
                 raceTime = data.millis;
+            },
+            LAP: function (data) {
+                robots[data.num] = data;
+                var rows = document.querySelectorAll('#tbody tr');
+                if (rows.length < data.num) {
+                    var tbody = document.querySelector('#tbody');
+                    tbody.innerHTML += '<tr></tr>';
+                }
+                rows = document.querySelectorAll('#tbody tr');
+                rows[data.num - 1].innerHTML =
+                    '<td>' + data.num + '</td>' +
+                    '<td>' + data.name + '</td>' +
+                    '<td>' + data.place + '</td>' +
+                    '<td>' + data.laps + '</td>' +
+                    '<td>' + msToTime(data.time) + '</td>'
+                ;
             }
         };
 
@@ -218,6 +237,8 @@
                 for (var i = 0; i < buttons.length; i++) {
                     buttons[i].toggleAttribute('disabled');
                 }
+
+                socket.send(JSON.stringify({'type': 'LAPS'}));
             }
 
             function onClose(event) {

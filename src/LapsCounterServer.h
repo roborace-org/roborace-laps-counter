@@ -7,6 +7,7 @@
 #include <Interval.h>
 #include <Stopwatch.h>
 #include "RaceState.h"
+#include "robots.h"
 
 class LapsCounterServer {
 
@@ -96,6 +97,8 @@ private:
             String raceStateString;
             getRaceStateString(raceState, raceStateString);
             sendWebSocket(num, "STATE", "state", raceStateString.c_str());
+        } else if (root["type"] == "LAPS") {
+            sendRobotsLaps(num);
         } else {
             String s = String("Unknown type: ");
             s.concat((const char *) root["type"]);
@@ -143,16 +146,27 @@ private:
         }
     }
 
-    void sendRaceTime(uint8_t num) {
-        JsonObject &root = createRootObject("TIME");
-        root["millis"] = raceStopwatch.time();
+    void sendRobotsLaps(uint8_t num) {
+        for (const auto &robot : robots) {
+            sendRobotLap(robot, num);
+        }
+    }
+
+    void sendRobotLap(const Robot &robot, uint8_t num = 255) {
+        JsonObject &root = createRootObject("LAP");
+        root["num"] = robot.num;
+        root["name"] = robot.name;
+        root["place"] = robot.place;
+        root["laps"] = robot.laps;
+        root["time"] = robot.time;
+        root["best"] = robot.best;
         sendWebSocket(root, num);
     }
 
-    void sendRaceTime() {
+    void sendRaceTime(uint8_t num = 255) {
         JsonObject &root = createRootObject("TIME");
         root["millis"] = raceStopwatch.time();
-        sendWebSocket(root);
+        sendWebSocket(root, num);
     }
 
     void sendWebSocket(uint8_t num, const char *type, const char *fieldName, const char *fieldValue) {
@@ -161,16 +175,14 @@ private:
         sendWebSocket(resp, num);
     }
 
-    void sendWebSocket(const JsonObject &root, uint8_t num) {
+    void sendWebSocket(const JsonObject &root, uint8_t num = 255) {
         String json;
         root.printTo(json);
-        webSocket.sendTXT(num, json);
-    }
-
-    void sendWebSocket(const JsonObject &root) {
-        String json;
-        root.printTo(json);
-        webSocket.broadcastTXT(json);
+        if (num == 255) {
+            webSocket.broadcastTXT(json);
+        } else {
+            webSocket.sendTXT(num, json);
+        }
     }
 
     JsonObject &createRootObject(const char *type) {

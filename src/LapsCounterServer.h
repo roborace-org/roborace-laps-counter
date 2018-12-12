@@ -14,7 +14,15 @@ public:
 
     LapsCounterServer(const char *ssid, const char *pass) {
         WiFiMulti.addAP(ssid, pass);
-        WiFiMulti.run();
+
+        wl_status_t run;
+        while ((run = WiFiMulti.run()) != WL_CONNECTED) {
+            Serial.print(run);
+            delay(100);
+        }
+        const IPAddress &ip = WiFi.localIP();
+        Serial.printf("[WIFI] IP: %d.%d.%d.%d\n", ip[0], ip[1], ip[2], ip[3]);
+        
         webSocket.begin();
         webSocket.onEvent([&](uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
             webSocketEvent(num, type, payload, length);

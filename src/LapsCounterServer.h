@@ -22,7 +22,7 @@ public:
         }
         const IPAddress &ip = WiFi.localIP();
         Serial.printf("[WIFI] IP: %d.%d.%d.%d\n", ip[0], ip[1], ip[2], ip[3]);
-        
+
         webSocket.begin();
         webSocket.onEvent([&](uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
             webSocketEvent(num, type, payload, length);
@@ -34,9 +34,7 @@ public:
         webSocket.loop();
 
         if (interval.isReady() && raceState == RaceState::RUNNING) {
-            JsonObject &root = createRootObject("TIME");
-            root["millis"] = raceStopwatch.time();
-            sendWebSocket(root);
+            sendRaceTime();
         }
 
     }
@@ -71,6 +69,9 @@ private:
                 String raceStateString;
                 getRaceStateString(raceState, raceStateString);
                 sendWebSocket(num, "STATE", "state", raceStateString.c_str());
+                if (raceState == RaceState::RUNNING) {
+                    sendRaceTime(num);
+                }
                 break;
             }
             case WStype_TEXT: {
@@ -132,9 +133,7 @@ private:
             if (raceState == RaceState::RUNNING) {
                 raceStopwatch.start();
                 interval.startWithCurrentTime();
-                JsonObject &root = createRootObject("TIME");
-                root["millis"] = raceStopwatch.time();
-                sendWebSocket(root);
+                sendRaceTime();
             } else if (raceState == RaceState::FINISH) {
                 raceTime = raceStopwatch.time();
                 JsonObject &root = createRootObject("TIME");
@@ -142,6 +141,18 @@ private:
                 sendWebSocket(root);
             }
         }
+    }
+
+    void sendRaceTime(uint8_t num) {
+        JsonObject &root = createRootObject("TIME");
+        root["millis"] = raceStopwatch.time();
+        sendWebSocket(root, num);
+    }
+
+    void sendRaceTime() {
+        JsonObject &root = createRootObject("TIME");
+        root["millis"] = raceStopwatch.time();
+        sendWebSocket(root);
     }
 
     void sendWebSocket(uint8_t num, const char *type, const char *fieldName, const char *fieldValue) {

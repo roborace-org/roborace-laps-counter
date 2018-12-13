@@ -7,11 +7,11 @@ byte nums = 0;
 class Robot {
 public:
 
-    Robot(const char *name, const byte irCode) : num(++nums), place(nums), name(name), irCode(irCode) {}
+    Robot(const char *name, const uint32_t irCode) : num(++nums), place(nums), name(name), irCode(irCode) {}
 
     const byte num;
     const char *name;
-    const byte irCode = 0x0;
+    const uint32_t irCode = 0x0;
 
     byte place = 0;
     byte laps = 0;

@@ -7,6 +7,7 @@
 #include <Interval.h>
 #include <Stopwatch.h>
 #include "RaceState.h"
+#include "IrReceiver.h"
 #include "robots.h"
 
 class LapsCounterServer {
@@ -34,8 +35,12 @@ public:
         WiFiMulti.run();
         webSocket.loop();
 
-        if (interval.isReady() && raceState == RaceState::RUNNING) {
-            sendRaceTime();
+        if (raceState == RaceState::RUNNING) {
+            checkIrCodes();
+
+            if (interval.isReady()) {
+                sendRaceTime();
+            }
         }
 
     }
@@ -49,11 +54,30 @@ private:
 
     Interval interval = Interval(10000);
 
+    IrReceiver irReceiver;
+
     ESP8266WiFiMulti WiFiMulti;
 
     WebSocketsServer webSocket = WebSocketsServer(80);
 
     DynamicJsonBuffer jsonBuffer;
+
+
+    void checkIrCodes() {
+        uint32_t irCode = irReceiver.getCode();
+        if (irCode > 0) {
+            for (auto &&robot :robots) {
+                if (robot.irCode == irCode) {
+                    if (raceStopwatch.time() - robot.time >= 1000) {
+                        robot.laps++;
+                        robot.time = raceStopwatch.time();
+                        sendRobotLap(robot);
+                    }
+                    break;
+                }
+            }
+        }
+    }
 
 
     void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {

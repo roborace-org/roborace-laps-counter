@@ -10,5 +10,6 @@ char pass[] = "pa$$word";
 #define IR_GND_PIN D6
 #define IR_V_PIN D7
 
+#define SAFE_LAPS_INTERVAL 5000
 
 #endif

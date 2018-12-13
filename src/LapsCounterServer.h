@@ -42,7 +42,6 @@ public:
                 sendRaceTime();
             }
         }
-
     }
 
 private:
@@ -51,6 +50,8 @@ private:
 
     Stopwatch raceStopwatch;
     unsigned long raceTime;
+
+    RobotsHolder robotsHolder;
 
     Interval interval = Interval(10000);
 
@@ -66,15 +67,11 @@ private:
     void checkIrCodes() {
         uint32_t irCode = irReceiver.getCode();
         if (irCode > 0) {
-            for (auto &&robot :robots) {
-                if (robot.irCode == irCode) {
-                    if (raceStopwatch.time() - robot.time >= 1000) {
-                        robot.laps++;
-                        robot.time = raceStopwatch.time();
-                        sendRobotLap(robot);
-                    }
-                    break;
-                }
+            Serial.println(irCode, HEX);
+            Robot *robot = robotsHolder.checkIrCode(irCode, raceStopwatch.time());
+            if (robot) {
+//                sendRobotLap(*robot);
+                sendRobotsLaps(); // Broadcast all robots because place can be changed for several robots
             }
         }
     }
@@ -170,9 +167,9 @@ private:
         }
     }
 
-    void sendRobotsLaps(uint8_t num) {
-        for (const auto &robot : robots) {
-            sendRobotLap(robot, num);
+    void sendRobotsLaps(uint8_t num = 255) {
+        for (int i = 0; i < robotsHolder.count; i++) {
+            sendRobotLap(*robotsHolder.robots[i], num);
         }
     }
 

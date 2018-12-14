@@ -9,6 +9,7 @@
 #include "RaceState.h"
 #include "IrReceiver.h"
 #include "robots.h"
+#include "LedRGB.h"
 
 class LapsCounterServer {
 
@@ -20,8 +21,12 @@ public:
         wl_status_t run;
         while ((run = WiFiMulti.run()) != WL_CONNECTED) {
             Serial.print(run);
+            ledRGB.blue();
+            delay(100);
+            ledRGB.rgb(0, 0, 0);
             delay(100);
         }
+        ledRGB.blue();
         const IPAddress &ip = WiFi.localIP();
         Serial.printf("[WIFI] IP: %d.%d.%d.%d\n", ip[0], ip[1], ip[2], ip[3]);
 
@@ -56,6 +61,8 @@ private:
     Interval interval = Interval(10000);
 
     IrReceiver irReceiver;
+
+    LedRGB ledRGB = LedRGB(LED_RED_PIN, LED_GREEN_PIN, LED_BLUE_PIN, LED_V_PIN);
 
     ESP8266WiFiMulti WiFiMulti;
 
@@ -154,11 +161,15 @@ private:
             broadcast["state"] = raceStateString;
             sendWebSocket(broadcast);
 
-            if (raceState == RaceState::RUNNING) {
+            if (raceState == RaceState::STEADY) {
+                ledRGB.red();
+            } else if (raceState == RaceState::RUNNING) {
+                ledRGB.green();
                 raceStopwatch.start();
                 interval.startWithCurrentTime();
                 sendRaceTime();
             } else if (raceState == RaceState::FINISH) {
+                ledRGB.blue();
                 raceTime = raceStopwatch.time();
                 JsonObject &root = createRootObject("TIME");
                 root["millis"] = raceTime;

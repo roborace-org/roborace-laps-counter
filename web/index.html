@@ -73,6 +73,12 @@
 
         }
 
+        #content input {
+            margin: 0 5px;
+            padding: 0 10px;
+            font-size: 4vh;
+        }
+
     </style>
 </head>
 <body>
@@ -89,6 +95,7 @@
             <thead>
             <tr>
                 <th>Start #</th>
+                <th>Control</th>
                 <th>Name</th>
                 <th>Place</th>
                 <th>Laps</th>
@@ -166,6 +173,16 @@
             }, 5000);
         });
 
+        var onClickNum = function (event) {
+            var input = event.target;
+            var data = {
+                'type': 'LAP_MAN',
+                'robot': parseInt(input.dataset.num),
+                'laps': parseInt(input.value)
+            };
+            socket.send(JSON.stringify(data));
+        };
+
         var types = {
             STATE: function (data) {
                 raceState = data.state;
@@ -195,14 +212,27 @@
                     var tbody = document.querySelector('#tbody');
                     tbody.innerHTML += '<tr></tr>';
                 }
+
+                var buttons = document.querySelectorAll('#content input');
+                for (var i = 0; i < buttons.length; i++) {
+                    buttons[i].removeEventListener('click', onClickNum);
+                }
+
                 rows = document.querySelectorAll('#tbody tr');
                 rows[data.num - 1].innerHTML =
                     '<td>' + data.num + '</td>' +
+                    '<td><input type="button" value="+1" data-num="' + data.num + '"><input type="button" value="-1" data-num="' + data.num + '"></td>' +
                     '<td>' + data.name + '</td>' +
                     '<td>' + data.place + '</td>' +
                     '<td>' + data.laps + '</td>' +
                     '<td>' + msToTime(data.time) + '</td>'
                 ;
+
+                buttons = document.querySelectorAll('#content input');
+                for (i = 0; i < buttons.length; i++) {
+                    buttons[i].addEventListener('click', onClickNum);
+                }
+
             }
         };
 

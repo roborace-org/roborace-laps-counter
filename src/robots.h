@@ -58,6 +58,18 @@ public:
         return NULL;
     }
 
+    void lapManual(byte num, int laps, unsigned long raceTime) {
+        for (int i = 0; i < count; i++) {
+            if (robots[i]->num == num) {
+                robots[i]->laps += laps;
+                if (laps > 0) {
+                    robots[i]->time = raceTime;
+                }
+                recalculatePlaces(robots[i]);
+            }
+        }
+    }
+
 private:
 
     void recalculatePlaces(Robot *robot) {

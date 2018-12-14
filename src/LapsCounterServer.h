@@ -127,6 +127,11 @@ private:
             sendWebSocket(num, "STATE", "state", raceStateString.c_str());
         } else if (root["type"] == "LAPS") {
             sendRobotsLaps(num);
+        } else if (root["type"] == "LAP_MAN") {
+            byte robot = root["robot"];
+            int laps = root["laps"];
+            robotsHolder.lapManual(robot, laps, raceStopwatch.time());
+            sendRobotsLaps(num);
         } else {
             String s = String("Unknown type: ");
             s.concat((const char *) root["type"]);

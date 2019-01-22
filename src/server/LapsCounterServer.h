@@ -7,7 +7,6 @@
 #include <Interval.h>
 #include <Stopwatch.h>
 #include "RaceState.h"
-#include "IrReceiver.h"
 #include "robots.h"
 #include "LedRGB.h"
 
@@ -41,8 +40,6 @@ public:
         webSocket.loop();
 
         if (raceState == RaceState::RUNNING) {
-            checkIrCodes();
-
             if (interval.isReady()) {
                 sendRaceTime();
             }
@@ -60,8 +57,6 @@ private:
 
     Interval interval = Interval(10000);
 
-    IrReceiver irReceiver;
-
     LedRGB ledRGB = LedRGB(LED_RED_PIN, LED_GREEN_PIN, LED_BLUE_PIN, LED_V_PIN);
 
     ESP8266WiFiMulti WiFiMulti;
@@ -69,19 +64,6 @@ private:
     WebSocketsServer webSocket = WebSocketsServer(80);
 
     DynamicJsonBuffer jsonBuffer;
-
-
-    void checkIrCodes() {
-        uint32_t irCode = irReceiver.getCode();
-        if (irCode > 0) {
-            Serial.println(irCode, HEX);
-            Robot *robot = robotsHolder.checkIrCode(irCode, raceStopwatch.time());
-            if (robot) {
-//                sendRobotLap(*robot);
-                sendRobotsLaps(); // Broadcast all robots because place can be changed for several robots
-            }
-        }
-    }
 
 
     void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
@@ -132,6 +114,8 @@ private:
             int laps = root["laps"];
             robotsHolder.lapManual(robot, laps, raceStopwatch.time());
             sendRobotsLaps(num);
+        } else if (root["type"] == "FRAME") {
+            // TODO
         } else {
             String s = String("Unknown type: ");
             s.concat((const char *) root["type"]);

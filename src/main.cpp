@@ -2,28 +2,33 @@
 #include "config.h"
 
 
-#ifdef RECEIVER
-
-#include "LapsCounterServer.h"
-
+#ifdef SERVER
+#include "server/LapsCounterServer.h"
 LapsCounterServer *device;
+#endif
 
-#else
+#ifdef ROBOT
+#include "robot/Robot.h"
+Robot *device;
+#endif
 
-#include "Transponder.h"
-
-Transponder *device;
-
+#ifdef FRAME
+#include "frame/Frame.h"
+Frame *device;
 #endif
 
 void setup() {
+#ifdef SERVER
     Serial.begin(115200);
-#ifdef RECEIVER
     device = new LapsCounterServer(ssid, pass);
-#else
-    device = new Transponder(ssid, pass);
 #endif
-
+#ifdef ROBOT
+    Serial.begin(115200);
+    device = new Robot(ssid, pass);
+#endif
+#ifdef FRAME
+    device = new Frame();
+#endif
 }
 
 void loop() {

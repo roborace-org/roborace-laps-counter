@@ -112,6 +112,8 @@ private:
             String raceStateString;
             getRaceStateString(raceState, raceStateString);
             sendWebSocket(num, "STATE", "state", raceStateString.c_str());
+        } else if (root["type"] == "REGISTER") {
+            handleRegister(num, root);
         } else if (root["type"] == "LAPS") {
             sendRobotsLaps(num);
         } else if (root["type"] == "LAP_MAN") {
@@ -141,12 +143,19 @@ private:
             s.concat(state);
             return sendWebSocket(num, "ERROR", "error", s.c_str());
         }
-        changeStateAndBroadcastState(parsedState);
+        changeStateAndBroadcastState(num, parsedState);
 
     }
 
-    void changeStateAndBroadcastState(const RaceState &parsedState) {
+    void changeStateAndBroadcastState(uint8_t num, const RaceState &parsedState) {
         if (raceState != parsedState) {
+
+            if ((parsedState == RaceState::STEADY && raceState != RaceState::READY)
+                || (parsedState == RaceState::RUNNING && raceState != RaceState::STEADY)
+                || (parsedState == RaceState::FINISH && raceState != RaceState::RUNNING)) {
+                return sendWebSocket(num, "ERROR", "error", "Wrong current state to apply command");
+            }
+
             raceState = parsedState;
 
             JsonObject &broadcast = createRootObject("STATE");
@@ -155,7 +164,9 @@ private:
             broadcast["state"] = raceStateString;
             sendWebSocket(broadcast);
 
-            if (raceState == RaceState::STEADY) {
+            if (raceState == RaceState::READY) {
+                ledRGB.blue();
+            } else if (raceState == RaceState::STEADY) {
                 ledRGB.red();
             } else if (raceState == RaceState::RUNNING) {
                 ledRGB.green();
@@ -172,6 +183,11 @@ private:
         }
     }
 
+    void handleRegister(uint8_t num, JsonObject &root) {
+        Robot *robot = robotsHolder.addRobot("New robot", root["serial"]);
+        sendRobotLap(*robot);
+    }
+
     void sendRobotsLaps(uint8_t num = 255) {
         for (int i = 0; i < robotsHolder.count; i++) {
             sendRobotLap(*robotsHolder.robots[i], num);
@@ -181,6 +197,7 @@ private:
     void sendRobotLap(const Robot &robot, uint8_t num = 255) {
         JsonObject &root = createRootObject("LAP");
         root["num"] = robot.num;
+        root["serial"] = robot.serial;
         root["name"] = robot.name;
         root["place"] = robot.place;
         root["laps"] = robot.laps;

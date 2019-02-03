@@ -7,11 +7,11 @@ byte nums = 0;
 class Robot {
 public:
 
-    Robot(const char *name, const uint32_t irCode) : num(++nums), place(nums), name(name), irCode(irCode) {}
+    Robot(const char *name, const byte serial) : num(++nums), place(nums), name(name), serial(serial) {}
 
     const byte num;
     const char *name;
-    const uint32_t irCode = 0x0;
+    const byte serial = 0;
 
     byte place;
     byte laps = 0;
@@ -24,22 +24,22 @@ public:
 class RobotsHolder {
 public:
 
-    RobotsHolder() {
-        addRobot("Robot 1", 0xAAAA);
-        addRobot("My cool robot 2", 0xABCD);
-        addRobot("The best robot 3", 0xBEAF);
+    Robot *addRobot(const char *name, const byte serial) {
+        Robot *robot = findRobotBySerial(serial);
+        if (robot == NULL && count < MAX_ROBOTS_COUNT) {
+            robot = new Robot(name, serial);
+            robots[count++] = robot;
+        }
+
+        return robot;
     }
 
-    void addRobot(const char *name, const uint32_t irCode) {
-        robots[count++] = new Robot(name, irCode);
-    }
-
-    Robot *robots[10];
+    Robot *robots[MAX_ROBOTS_COUNT];
 
     byte count = 0;
 
     Robot *checkIrCode(uint32_t irCode, unsigned long raceTime) {
-        Robot *robot = findRobotByIrCode(irCode);
+        Robot *robot = findRobotBySerial(irCode);
         if (robot && raceTime - robot->time >= SAFE_LAPS_INTERVAL) {
             robot->laps++;
             robot->time = raceTime;
@@ -49,9 +49,9 @@ public:
         return NULL;
     }
 
-    Robot *findRobotByIrCode(uint32_t irCode) const {
+    Robot *findRobotBySerial(byte code) const {
         for (int i = 0; i < count; i++) {
-            if (robots[i]->irCode == irCode) {
+            if (robots[i]->serial == code) {
                 return robots[i];
             }
         }

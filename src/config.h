@@ -22,6 +22,7 @@ char pass[] = "pa$$word";
 // Server
 IPAddress SERVER_ADDRESS = {192, 168, 1, 200};
 #define WEBSOCKET_PORT 8888
+#define MAX_ROBOTS_COUNT 10
 #define SAFE_LAPS_INTERVAL 5000
 
 #endif

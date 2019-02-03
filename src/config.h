@@ -1,6 +1,8 @@
 #ifndef LAPS_COUNTER_CONFIG_H
 #define LAPS_COUNTER_CONFIG_H
 
+#include <IPAddress.h>
+
 // WiFi settings
 char ssid[] = "ACCESS-POINT";
 char pass[] = "pa$$word";
@@ -16,6 +18,10 @@ char pass[] = "pa$$word";
 #define LED_BLUE_PIN D3
 #define LED_V_PIN D1
 
+
+// Server
+IPAddress SERVER_ADDRESS = {192, 168, 1, 200};
+#define WEBSOCKET_PORT 8888
 #define SAFE_LAPS_INTERVAL 5000
 
 #endif

@@ -15,6 +15,7 @@ class LapsCounterServer {
 public:
 
     LapsCounterServer(const char *ssid, const char *pass) {
+        WiFi.config(SERVER_ADDRESS, {192, 168, 1, 1}, {255, 255, 255, 0});
         WiFiMulti.addAP(ssid, pass);
 
         wl_status_t run;
@@ -39,11 +40,7 @@ public:
         WiFiMulti.run();
         webSocket.loop();
 
-        if (raceState == RaceState::RUNNING) {
-            if (interval.isReady()) {
-                sendRaceTime();
-            }
-        }
+        lapsCounterLoop();
     }
 
 private:
@@ -61,10 +58,18 @@ private:
 
     ESP8266WiFiMulti WiFiMulti;
 
-    WebSocketsServer webSocket = WebSocketsServer(80);
+    WebSocketsServer webSocket = WebSocketsServer(WEBSOCKET_PORT);
 
     DynamicJsonBuffer jsonBuffer;
 
+
+    void lapsCounterLoop() {
+        if (raceState == RaceState::RUNNING) {
+            if (interval.isReady()) {
+                sendRaceTime();
+            }
+        }
+    }
 
     void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
 

@@ -28,7 +28,7 @@ public:
         const IPAddress &ip = WiFi.localIP();
         Serial.printf("[WIFI] IP: %d.%d.%d.%d\n", ip[0], ip[1], ip[2], ip[3]);
 
-        webSocket.begin("192.168.1.200", 80);
+        webSocket.begin(SERVER_ADDRESS, WEBSOCKET_PORT);
         webSocket.onEvent([&](WStype_t type, uint8_t *payload, size_t length) {
             webSocketEvent(type, payload, length);
         });

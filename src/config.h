@@ -25,4 +25,9 @@ IPAddress SERVER_ADDRESS = {192, 168, 1, 200};
 #define MAX_ROBOTS_COUNT 10
 #define SAFE_LAPS_INTERVAL 5000
 
+
+// Robot
+#define ROBOT_SERIAL 101
+#define SAFE_FRAME_INTERVAL 3000
+
 #endif

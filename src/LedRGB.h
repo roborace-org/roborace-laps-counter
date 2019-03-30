@@ -16,6 +16,8 @@ public:
 
     void red() const { rgb(1, 0, 0); }
 
+    void yellow() const { rgb(1, 1, 0); }
+
     void green() const { rgb(0, 1, 0); }
 
     void blue() const { rgb(0, 0, 1); }

@@ -41,14 +41,13 @@ public:
         wiFiMulti.run();
         webSocket.loop();
 
-        if (raceState == RaceState::RUNNING) {
-            checkIrReceiver();
-        }
+        checkIrReceiver();
     }
 
 private:
 
     void wifiInit(const char *ssid, const char *pass) {
+        ledRGB.blue();
         wiFiMulti.addAP(ssid, pass);
 
         wl_status_t run;
@@ -74,22 +73,27 @@ private:
     }
 
     void robotInit() {
-
         createRootObject("ROBOT_INIT");
         while (!sendWebSocket(doc)) {
-            delay(200);
+            ledRGB.red();
+            delay(100);
+            ledRGB.rgb(0, 0, 0);
+            delay(100);
             webSocket.loop();
         };
+        ledRGB.blue();
     }
 
     void checkIrReceiver() {
         uint32_t irCode = irReceiver.getCode();
-        if (irCode > 0 && frameSendTimeout.isReady()) {
+        if (irCode > 0) {
             Serial.println(irCode, HEX);
-            createRootObject("FRAME");
-            doc["frame"] = irCode;
-            sendWebSocket(doc);
-            frameSendTimeout.start(SAFE_FRAME_INTERVAL);
+            if (raceState == RaceState::RUNNING && frameSendTimeout.isReady()) {
+                createRootObject("FRAME");
+                doc["frame"] = irCode;
+                sendWebSocket(doc);
+                frameSendTimeout.start(SAFE_FRAME_INTERVAL);
+            }
         }
     }
 
@@ -146,8 +150,10 @@ private:
         if (raceState != parsedState) {
             raceState = parsedState;
 
-            if (raceState == RaceState::STEADY) {
+            if (raceState == RaceState::READY) {
                 ledRGB.red();
+            } else if (raceState == RaceState::STEADY) {
+                ledRGB.yellow();
             } else if (raceState == RaceState::RUNNING) {
                 ledRGB.green();
             } else if (raceState == RaceState::FINISH) {

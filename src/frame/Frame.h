@@ -10,7 +10,7 @@ public:
 
     void loop() {
         irsend.sendNEC(CODE, 32);
-        delay(10);
+        delay(20);
     }
 
 private:

@@ -38,4 +38,6 @@ private:
     const byte bluePin;
 };
 
+LedRGB ledRGB = LedRGB(LED_RED_PIN, LED_GREEN_PIN, LED_BLUE_PIN, LED_V_PIN);
+
 #endif

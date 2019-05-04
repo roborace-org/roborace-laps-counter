@@ -95,6 +95,7 @@
             <thead>
             <tr>
                 <th>Start #</th>
+                <th>Serial</th>
                 <th>Control</th>
                 <th>Name</th>
                 <th>Place</th>
@@ -108,7 +109,7 @@
     </div>
     <div id="buttons">
         <div id="config" class="block">
-            <input type="text" id="ip" value="ws://192.168.1.200">
+            <input type="text" id="ip" value="ws://192.168.1.200:8888">
             <input type="button" id="btn-connect" value="Connect">
         </div>
         <div id="control" class="block">
@@ -156,7 +157,6 @@
         document.querySelector('#btn-ready').addEventListener('click', function (event) {
             event.target.setAttribute('style', 'display:none');
             document.querySelector('#btn-steady').setAttribute('style', 'display:visible');
-            document.querySelector('#btn-steady').setAttribute('style', 'display:visible');
         });
         document.querySelector('#btn-steady').addEventListener('click', function (event) {
             event.target.setAttribute('style', 'display:none');
@@ -175,17 +175,30 @@
 
         var onClickNum = function (event) {
             var input = event.target;
-            var data = {
-                'type': 'LAP_MAN',
-                'robot': parseInt(input.dataset.num),
-                'laps': parseInt(input.value)
-            };
+
+            var data;
+            if (input.dataset.type === 'LAP_MAN') {
+                data = {
+                    'type': 'LAP_MAN',
+                    'serial': parseInt(input.dataset.serial),
+                    'laps': parseInt(input.value)
+                };
+            } else if (input.dataset.type === 'ROBOT_REMOVE') {
+                data = {
+                    'type': 'ROBOT_REMOVE',
+                    'serial': parseInt(input.dataset.serial)
+                };
+            }
             socket.send(JSON.stringify(data));
         };
 
         var types = {
             STATE: function (data) {
                 raceState = data.state;
+                document.querySelector('#btn-steady').setAttribute('style', 'display: none');
+                document.querySelector('#btn-go').setAttribute('style', 'display: none');
+                document.querySelector('#btn-finish').setAttribute('style', 'display: none');
+                document.querySelector('#btn-ready').setAttribute('style', 'display: none');
                 switch (raceState) {
                     case 'READY':
                         document.querySelector('#btn-steady').setAttribute('style', 'display: visible');
@@ -203,14 +216,15 @@
                 document.querySelector('#race-state').innerHTML = raceState;
             },
             TIME: function (data) {
-                raceTime = data.millis;
+                raceTime = data.time;
             },
             LAP: function (data) {
-                robots[data.num] = data;
-                var rows = document.querySelectorAll('#tbody tr');
-                if (rows.length < data.num) {
+                robots[data.serial] = data;
+                var row = document.querySelector('#tbody tr[data-serial="' + data.serial + '"]');
+                if (row === null) {
                     var tbody = document.querySelector('#tbody');
-                    tbody.innerHTML += '<tr></tr>';
+                    tbody.innerHTML += '<tr data-serial="' + data.serial + '"></tr>';
+                    row = document.querySelector('#tbody tr[data-serial="' + data.serial + '"]');
                 }
 
                 var buttons = document.querySelectorAll('#content input');
@@ -218,21 +232,31 @@
                     buttons[i].removeEventListener('click', onClickNum);
                 }
 
-                rows = document.querySelectorAll('#tbody tr');
-                rows[data.num - 1].innerHTML =
+                row.innerHTML =
                     '<td>' + data.num + '</td>' +
-                    '<td><input type="button" value="+1" data-num="' + data.num + '"><input type="button" value="-1" data-num="' + data.num + '"></td>' +
+                    '<td>' + data.serial + '</td>' +
+                    '<td>' +
+                    '<input type="button" value="+1" data-type="LAP_MAN" data-serial="' + data.serial + '">' +
+                    '<input type="button" value="-1" data-type="LAP_MAN" data-serial="' + data.serial + '">' +
+                    '<input type="button" value="rm" data-type="ROBOT_REMOVE" data-serial="' + data.serial + '">' +
+                    '</td>' +
                     '<td>' + data.name + '</td>' +
                     '<td>' + data.place + '</td>' +
                     '<td>' + data.laps + '</td>' +
                     '<td>' + msToTime(data.time) + '</td>'
                 ;
+                // '<td>' + data.name + '<input type="text" value="' + data.name + '" data-num="' + data.num + '"><input type="button" value="OK" data-num="' + data.num + '"></td>' +
 
-                buttons = document.querySelectorAll('#content input');
+                buttons = document.querySelectorAll('#content input[type="button"]');
                 for (i = 0; i < buttons.length; i++) {
                     buttons[i].addEventListener('click', onClickNum);
                 }
 
+            },
+            ROBOT_REMOVE: function (data) {
+                robots[data.serial] = null;
+                var row = document.querySelector('#tbody tr[data-serial="' + data.serial + '"]');
+                row.remove();
             }
         };
 
@@ -290,6 +314,7 @@
 
                 try {
                     data = JSON.parse(event.data);
+                    console.log(data);
                 } catch (error) {
                     console.error('Message should have JSON format');
                     return;

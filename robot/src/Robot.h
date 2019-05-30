@@ -19,6 +19,7 @@ private:
     RaceState raceState = RaceState::READY;
 
     Timeout frameSendTimeout;
+    Timeout ledTimeout;
 
 public:
 
@@ -32,6 +33,7 @@ public:
     void loop() {
         communication.loop();
         checkIrReceiver();
+        checkLed();
     }
 
 private:
@@ -43,7 +45,9 @@ private:
             if (raceState == RaceState::RUNNING && frameSendTimeout.isReady()) {
                 Serial.println("Send Frame");
                 communication.sendFrame(irCode);
-                frameSendTimeout.start(SAFE_FRAME_INTERVAL);
+                frameSendTimeout.start(FRAME_SAFE_DELAY);
+                ledTimeout.start(FRAME_LED_DELAY);
+                ledRGB.blue();
             }
         }
     }
@@ -52,15 +56,33 @@ private:
         if (raceState != newRaceState) {
             raceState = newRaceState;
 
-            if (raceState == RaceState::READY) {
+            lightLedByRaceState();
+        }
+    }
+
+    void checkLed() {
+        if (ledTimeout.isReady()) {
+            lightLedByRaceState();
+        }
+    }
+
+    void lightLedByRaceState() const {
+        switch (raceState) {
+            case RaceState::READY:
                 ledRGB.red();
-            } else if (raceState == RaceState::STEADY) {
+                break;
+            case RaceState::STEADY:
                 ledRGB.yellow();
-            } else if (raceState == RaceState::RUNNING) {
+                break;
+            case RaceState::RUNNING:
                 ledRGB.green();
-            } else if (raceState == RaceState::FINISH) {
+                break;
+            case RaceState::FINISH:
                 ledRGB.blue();
-            }
+                break;
+            case RaceState::UNKNOWN:
+                ledRGB.rgb(1, 1, 1);
+                break;
         }
     }
 

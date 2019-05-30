@@ -26,6 +26,7 @@ IPAddress SERVER_ADDRESS = {192, 168, 1, 200};
 
 // Robot
 #define ROBOT_SERIAL 101
-#define SAFE_FRAME_INTERVAL 1000
+#define FRAME_SAFE_DELAY 1000
+#define FRAME_LED_DELAY 500
 
 #endif

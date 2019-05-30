@@ -3,14 +3,15 @@
 
 class LedRGB {
 public:
-    LedRGB(const byte redPin, const byte greenPin, const byte bluePin, const byte vPin) :
-            redPin(redPin), greenPin(greenPin), bluePin(bluePin) {
+    LedRGB(const byte redPin, const byte greenPin, const byte bluePin, const byte vPin, const bool commonAnode) :
+            redPin(redPin), greenPin(greenPin), bluePin(bluePin), commonAnode(commonAnode) {
+
         pinMode(redPin, OUTPUT);
         pinMode(greenPin, OUTPUT);
         pinMode(bluePin, OUTPUT);
         pinMode(vPin, OUTPUT);
 
-        digitalWrite(vPin, HIGH);
+        digitalWrite(vPin, commonAnode ? HIGH : LOW);
         rgb(0, 0, 0);
     }
 
@@ -23,21 +24,22 @@ public:
     void blue() const { rgb(0, 0, 1); }
 
     void rgb(byte red, byte green, byte blue) const {
-        digitalWrite(redPin, invert(red));
-        digitalWrite(greenPin, invert(green));
-        digitalWrite(bluePin, invert(blue));
-    }
-
-    byte invert(byte red) const {
-        return (byte) (1 - red);
+        digitalWrite(redPin, commonAnode ? invert(red) : red);
+        digitalWrite(greenPin, commonAnode ? invert(green) : green);
+        digitalWrite(bluePin, commonAnode ? invert(blue) : blue);
     }
 
 private:
     const byte redPin;
     const byte greenPin;
     const byte bluePin;
+    const bool commonAnode;
+
+    byte invert(byte red) const {
+        return (byte) (1 - red);
+    }
 };
 
-LedRGB ledRGB = LedRGB(LED_RED_PIN, LED_GREEN_PIN, LED_BLUE_PIN, LED_V_PIN);
+LedRGB ledRGB = LedRGB(LED_RED_PIN, LED_GREEN_PIN, LED_BLUE_PIN, LED_V_PIN, false);
 
 #endif

@@ -2,6 +2,7 @@
 #define LAPS_COUNTER_ROBOT_H
 
 #include <Timeout.h>
+#include <Relay.h>
 #include "config.h"
 #include "Communication.h"
 #include "RaceState.h"
@@ -21,9 +22,12 @@ private:
     Timeout frameSendTimeout;
     Timeout ledTimeout;
 
+    Relay robotRun = Relay(ENABLE_PIN);
+
 public:
 
     Robot() {
+        robotRun.disable();
         communication.init(ROBOT_SERIAL);
         communication.onRaceStateChange([&](RaceState &newRaceState) {
             updateRaceState(newRaceState);
@@ -55,6 +59,12 @@ private:
     void updateRaceState(const RaceState &newRaceState) {
         if (raceState != newRaceState) {
             raceState = newRaceState;
+
+            if (raceState == RaceState::RUNNING) {
+                robotRun.enable();
+            } else {
+                robotRun.disable();
+            }
 
             lightLedByRaceState();
         }

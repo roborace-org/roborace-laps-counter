@@ -8,15 +8,16 @@ char ssid[] = "ACCESS-POINT";
 char pass[] = "pa$$word";
 
 // IR
-#define IR_RECV_PIN D6
-#define IR_GND_PIN D7
-#define IR_V_PIN D8
+#define IR_RECV_PIN D1
+#define IR_GND_PIN D2
+#define IR_V_PIN D3
+#define ENABLE_PIN D4
 
 // Led
-#define LED_RED_PIN D0
-#define LED_GREEN_PIN D2
-#define LED_BLUE_PIN D3
-#define LED_V_PIN D1
+#define LED_RED_PIN D5
+#define LED_V_PIN D6
+#define LED_GREEN_PIN D7
+#define LED_BLUE_PIN D8
 
 
 // Server

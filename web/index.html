@@ -21,13 +21,13 @@
 
         #header {
             flex-grow: 0;
-            font-size: 10vh;
+            font-size: 8vh;
             text-align: center;
         }
 
         #menu {
             flex-grow: 0;
-            font-size: 8vh;
+            font-size: 4vw;
             display: flex;
             justify-content: space-between;
             padding: 0 15vw;
@@ -66,7 +66,7 @@
         }
 
         #content th, td {
-            font-size: 5vh;
+            font-size: 3vw;
             padding: 10px 2vw;
             margin: 0;
             border: 1px solid #d5d5d5;
@@ -109,7 +109,7 @@
     </div>
     <div id="buttons">
         <div id="config" class="block">
-            <input type="text" id="ip" value="ws://192.168.1.200:8888">
+            <input type="text" id="ip" value="ws://smarthata.org:8888">
             <input type="button" id="btn-connect" value="Connect">
         </div>
         <div id="control" class="block">
@@ -184,12 +184,22 @@
                     'laps': parseInt(input.value)
                 };
             } else if (input.dataset.type === 'ROBOT_REMOVE') {
+                if (confirm("Do you really want to remove robot?")) {
+                    data = {
+                        'type': 'ROBOT_REMOVE',
+                        'serial': parseInt(input.dataset.serial)
+                    };
+                }
+            } else if (input.dataset.type === 'ROBOT_EDIT') {
                 data = {
-                    'type': 'ROBOT_REMOVE',
-                    'serial': parseInt(input.dataset.serial)
+                    'type': 'ROBOT_EDIT',
+                    'serial': parseInt(input.dataset.serial),
+                    'name': input.previousSibling.value
                 };
             }
-            socket.send(JSON.stringify(data));
+            if (data !== undefined) {
+                socket.send(JSON.stringify(data));
+            }
         };
 
         var types = {
@@ -240,12 +250,11 @@
                     '<input type="button" value="-1" data-type="LAP_MAN" data-serial="' + data.serial + '">' +
                     '<input type="button" value="rm" data-type="ROBOT_REMOVE" data-serial="' + data.serial + '">' +
                     '</td>' +
-                    '<td>' + data.name + '</td>' +
+                    '<td><input type="text" value="' + data.name + '"><input type="button" value="ok" data-type="ROBOT_EDIT" data-serial="' + data.serial + '"></td>' +
                     '<td>' + data.place + '</td>' +
                     '<td>' + data.laps + '</td>' +
                     '<td>' + msToTime(data.time) + '</td>'
                 ;
-                // '<td>' + data.name + '<input type="text" value="' + data.name + '" data-num="' + data.num + '"><input type="button" value="OK" data-num="' + data.num + '"></td>' +
 
                 buttons = document.querySelectorAll('#content input[type="button"]');
                 for (i = 0; i < buttons.length; i++) {

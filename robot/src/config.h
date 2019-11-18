@@ -23,6 +23,7 @@ char pass[] = "pa$$word";
 // Server
 IPAddress SERVER_ADDRESS = {192, 168, 1, 200};
 #define WEBSOCKET_PORT 8888
+#define WEBSOCKET_URL "/ws"
 
 
 // Robot

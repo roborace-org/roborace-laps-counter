@@ -67,7 +67,7 @@ private:
     }
 
     void webSocketInit() {
-        webSocket.begin(SERVER_ADDRESS, WEBSOCKET_PORT);
+        webSocket.begin(SERVER_ADDRESS, WEBSOCKET_PORT, WEBSOCKET_URL);
         webSocket.onEvent([&](WStype_t type, uint8_t *payload, size_t length) {
             webSocketEvent(type, payload, length);
         });
